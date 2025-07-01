@@ -22,6 +22,13 @@ CFILES = \
 	libvfs.c \
 	$(CFILES_EXTRA)
 
+JSFILES = \
+	src/libauthorizer.js \
+	src/libfunction.js \
+	src/libmodule.js \
+	src/libprogress.js \
+	src/libvfs.js
+
 dir.crsql := ./crsql/src
 
 vpath %.c src
@@ -210,7 +217,7 @@ clean-debug:
 .PHONY: debug
 debug: debug/crsqlite-sync.mjs debug/crsqlite.mjs
 
-debug/crsqlite-sync.mjs: $(OBJ_FILES_DEBUG) $(RS_DEBUG_BC) $(EXPORTED_FUNCTIONS) $(EXPORTED_RUNTIME_METHODS)
+debug/crsqlite-sync.mjs: $(OBJ_FILES_DEBUG) $(JSFILES) $(RS_DEBUG_BC) $(EXPORTED_FUNCTIONS) $(EXPORTED_RUNTIME_METHODS)
 	mkdir -p debug
 	$(EMCC) $(EMFLAGS_DEBUG) \
 	  $(EMFLAGS_INTERFACES) \
@@ -218,7 +225,7 @@ debug/crsqlite-sync.mjs: $(OBJ_FILES_DEBUG) $(RS_DEBUG_BC) $(EXPORTED_FUNCTIONS)
 		$(RS_WASM_TGT_DIR)/debug/deps/*.bc \
 	  $(OBJ_FILES_DEBUG) -o $@
 
-debug/crsqlite.mjs: $(OBJ_FILES_DEBUG) $(RS_DEBUG_BC) $(EXPORTED_FUNCTIONS) $(EXPORTED_RUNTIME_METHODS) $(ASYNCIFY_IMPORTS)
+debug/crsqlite.mjs: $(OBJ_FILES_DEBUG) $(JSFILES) $(RS_DEBUG_BC) $(EXPORTED_FUNCTIONS) $(EXPORTED_RUNTIME_METHODS) $(ASYNCIFY_IMPORTS)
 	mkdir -p debug
 	$(EMCC) $(EMFLAGS_DEBUG) \
 	  $(EMFLAGS_INTERFACES) \
@@ -237,7 +244,7 @@ dist: deps dist/crsqlite-sync.mjs dist/crsqlite.mjs
 
 FORCE: ;
 
-dist/crsqlite-sync.mjs: $(OBJ_FILES_DIST) $(RS_RELEASE_BC) $(EXPORTED_FUNCTIONS) $(EXPORTED_RUNTIME_METHODS)
+dist/crsqlite-sync.mjs: $(OBJ_FILES_DIST) $(JSFILES) $(RS_RELEASE_BC) $(EXPORTED_FUNCTIONS) $(EXPORTED_RUNTIME_METHODS)
 	mkdir -p dist
 	$(EMCC) $(EMFLAGS_DIST) \
 	  $(EMFLAGS_INTERFACES) \
@@ -245,7 +252,7 @@ dist/crsqlite-sync.mjs: $(OBJ_FILES_DIST) $(RS_RELEASE_BC) $(EXPORTED_FUNCTIONS)
 		$(RS_WASM_TGT_DIR)/release/deps/*.bc \
 	  $(OBJ_FILES_DIST) -o $@
 
-dist/crsqlite.mjs: $(OBJ_FILES_DIST) $(RS_RELEASE_BC) $(EXPORTED_FUNCTIONS) $(EXPORTED_RUNTIME_METHODS) $(ASYNCIFY_IMPORTS)
+dist/crsqlite.mjs: $(OBJ_FILES_DIST) $(JSFILES) $(RS_RELEASE_BC) $(EXPORTED_FUNCTIONS) $(EXPORTED_RUNTIME_METHODS) $(ASYNCIFY_IMPORTS)
 	mkdir -p dist
 	$(EMCC) $(EMFLAGS_DIST) \
 	  $(EMFLAGS_INTERFACES) \

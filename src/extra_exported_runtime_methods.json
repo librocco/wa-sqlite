@@ -4,7 +4,7 @@
   "getTempRet0",
   "getValue",
   "setValue",
-  "UTF8ToString",
+  "lengthBytesUTF8",
   "stringToUTF8",
-  "lengthBytesUTF8"
+  "UTF8ToString"
 ]
