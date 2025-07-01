@@ -1,56 +1,55 @@
-// Copyright 2021 Roy T. Hashimoto. All Rights Reserved.
+// Copyright 2024 Roy T. Hashimoto. All Rights Reserved.
 #include <emscripten.h>
 #include <sqlite3.h>
+#include <stdio.h>
+#include <string.h>
+#include <strings.h>
 
-extern void jsFunc(void *pApp, sqlite3_context *pContext, int iCount, sqlite3_value **ppValues);
-extern void jsStep(void *pApp, sqlite3_context *pContext, int iCount, sqlite3_value **ppValues);
-extern void jsFinal(void *pApp, sqlite3_context *pContext);
-extern int jsUpdateHook(void *pApp, int updateType, const char *dbName, const char *tblName, int lo32, int hi32);
+#include "libadapters.h"
 
-static void xFunc(sqlite3_context *pContext, int iCount, sqlite3_value **ppValues)
-{
-  jsFunc(sqlite3_user_data(pContext), pContext, iCount, ppValues);
+enum { xFunc, xStep, xFinal, xUpdateHook };
+
+#define FUNC_JS(SIGNATURE, KEY, METHOD, ...)                                   \
+  (asyncFlags & (1 << METHOD) ? SIGNATURE##_async(KEY, #METHOD, __VA_ARGS__)   \
+                              : SIGNATURE(KEY, #METHOD, __VA_ARGS__))
+
+static void libfunction_xFunc(sqlite3_context *ctx, int argc,
+                              sqlite3_value **argv) {
+  const void *pApp = sqlite3_user_data(ctx);
+  const int asyncFlags = pApp ? *(int *)pApp : 0;
+  FUNC_JS(vpppip, pApp, xFunc, ctx, argc, argv);
 }
 
-static void xStep(sqlite3_context *pContext, int iCount, sqlite3_value **ppValues)
-{
-  jsStep(sqlite3_user_data(pContext), pContext, iCount, ppValues);
+static void libfunction_xStep(sqlite3_context *ctx, int argc,
+                              sqlite3_value **argv) {
+  const void *pApp = sqlite3_user_data(ctx);
+  const int asyncFlags = pApp ? *(int *)pApp : 0;
+  FUNC_JS(vpppip, pApp, xStep, ctx, argc, argv);
 }
 
-static void xFinal(sqlite3_context *pContext)
-{
-  jsFinal(sqlite3_user_data(pContext), pContext);
+static void libfunction_xFinal(sqlite3_context *ctx) {
+  const void *pApp = sqlite3_user_data(ctx);
+  const int asyncFlags = pApp ? *(int *)pApp : 0;
+  FUNC_JS(vppp, pApp, xFinal, ctx);
 }
 
-static void xUpdateHook(void *pApp, int updateType, const char *dbName, const char *tblName, sqlite3_int64 rowid)
-{
-  int hi32 = ((rowid & 0xFFFFFFFF00000000LL) >> 32);
-  int lo32 = (rowid & 0xFFFFFFFFLL);
-  jsUpdateHook(pApp, updateType, dbName, tblName, lo32, hi32);
+int EMSCRIPTEN_KEEPALIVE libfunction_create_function(
+    sqlite3 *db, const char *zFunctionName, int nArg, int eTextRep, void *pApp,
+    void *xFunc, void *xStep, void *xFinal) {
+  return sqlite3_create_function_v2(
+      db, zFunctionName, nArg, eTextRep, pApp,
+      xFunc ? &libfunction_xFunc : NULL, xStep ? &libfunction_xStep : NULL,
+      xFinal ? &libfunction_xFinal : NULL, &sqlite3_free);
 }
 
-int EMSCRIPTEN_KEEPALIVE create_function(
-    sqlite3 *db,
-    const char *zFunctionName,
-    int nArg,
-    int eTextRep,
-    void *pApp,
-    int functionType)
-{
-  return sqlite3_create_function(
-      db,
-      zFunctionName,
-      nArg,
-      eTextRep,
-      pApp,
-      functionType == 0 ? &xFunc : 0,
-      functionType == 0 ? 0 : &xStep,
-      functionType == 0 ? 0 : &xFinal);
+static void libfunction_xUpdateHook(void *pApp, int updateType,
+                                    const char *dbName, const char *tblName,
+                                    sqlite3_int64 rowid) {
+  // NOTE: the update callback is only called synchronously to avoid deadlocks
+  // in txns
+  vpippj(pApp, updateType, dbName, tblName, rowid);
 }
 
-void EMSCRIPTEN_KEEPALIVE update_hook(
-    sqlite3 *db,
-    void *pApp)
-{
-  sqlite3_update_hook(db, &xUpdateHook, pApp);
+void EMSCRIPTEN_KEEPALIVE libfunction_update_hook(sqlite3 *db, void *pApp) {
+  sqlite3_update_hook(db, &libfunction_xUpdateHook, pApp);
 }

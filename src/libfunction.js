@@ -1,106 +1,108 @@
-// Copyright 2021 Roy T. Hashimoto. All Rights Reserved.
-// @ts-ignore
-const fn_methods = {
-  $fn_method_support__postset: 'fn_method_support();',
-  $fn_method_support: function() {
-    function pullCstr(heap, index) {
-      const chars = [];
-      for (let i = 0; heap[index + i] != 0; ++i) {
-        if (i > 1000) {
-          throw new Error('C-string never terminated after 1k characters');
-        }
-    
-        chars.push(heap[index + i]);
+// Copyright 2024 Roy T. Hashimoto. All Rights Reserved.
+// This file should be included in the build with --post-js.
+
+(function() {
+  const AsyncFunction = Object.getPrototypeOf(async function() { }).constructor;
+
+  // This list of methods must match exactly with libfunction.c.
+  const FUNC_METHODS = [
+    'xFunc',
+    'xStep',
+    'xFinal',
+  ];
+
+  const mapFunctionNameToKey = new Map();
+
+  // NOTE: this is the vlcn implementation -- I couldn't find an old blame on hashimoto
+  // corresponding to this.
+  // The below code (uncommented) is the latest up-to-date code from the original hashimoto version
+  //
+  // Module['createFunction'] =
+  //   function(db, zFunctionName, nArg, eTextRep, pAppData, f) {
+  //     const key = mapIdToFunction.size;
+  //     mapIdToFunction.set(key, {
+  //       f: f,
+  //       appData: pAppData
+  //     });
+  //     return ccall(
+  //       'create_function',
+  //       'number',
+  //       ['number', 'string', 'number', 'number', 'number', 'number'],
+  //       [db, zFunctionName, nArg, eTextRep, key, 0]);
+  //   }
+  Module['create_function'] = function(db, zFunctionName, nArg, eTextRep, pApp, xFunc, xStep, xFinal) {
+    // Allocate some memory to store the async flags. In addition, this
+    // pointer is passed to SQLite as the application data (the user's
+    // application data is ignored), and is used to look up the JavaScript
+    // target object.
+    const pAsyncFlags = Module['_sqlite3_malloc'](4);
+    const target = { xFunc, xStep, xFinal };
+
+    // TODO: Check this this - seems to be prone to conflicts if two functions share the same 
+    // set of async flags
+    setValue(pAsyncFlags, FUNC_METHODS.reduce((mask, method, i) => {
+      if (target[method] instanceof AsyncFunction) {
+        return mask | 1 << i;
       }
-    
-      return String.fromCharCode(...chars);
-    }
+      return mask;
+    }, 0), 'i32');
 
-    const mapIdToFunction = new Map();
-    const mapContextToAppData = new Map();
-
-    Module['updateHook'] = function(db, f) {
-      const key = mapIdToFunction.size;
-      mapIdToFunction.set(key, f);
-      return ccall(
-        'update_hook',
-        'void',
-        ['number', 'number'],
-        [db, key]
-      );
-    }
-
-    Module['createFunction'] =
-      function(db, zFunctionName, nArg, eTextRep, pAppData, f) {
-        const key = mapIdToFunction.size;
-        mapIdToFunction.set(key, {
-          f: f,
-          appData: pAppData
-        });
-        return ccall(
-          'create_function',
-          'number',
-          ['number', 'string', 'number', 'number', 'number', 'number'],
-          [db, zFunctionName, nArg, eTextRep, key, 0]);
+    const result = ccall(
+      'libfunction_create_function',
+      'number',
+      ['number', 'string', 'number', 'number', 'number', 'number', 'number', 'number'],
+      [
+        db,
+        zFunctionName,
+        nArg,
+        eTextRep,
+        pAsyncFlags,
+        xFunc ? 1 : 0,
+        xStep ? 1 : 0,
+        xFinal ? 1 : 0
+      ]);
+    if (!result) {
+      if (mapFunctionNameToKey.has(zFunctionName)) {
+        // Reclaim the old resources used with this name.
+        const oldKey = mapFunctionNameToKey.get(zFunctionName);
+        Module['deleteCallback'](oldKey);
       }
-
-    Module['createAggregate'] =
-      function(db, zFunctionName, nArg, eTextRep, pAppData, fStep, fFinal) {
-        const key = mapIdToFunction.size;
-        mapIdToFunction.set(key, {
-          step: fStep,
-          final: fFinal,
-          appData: pAppData
-        });
-        return ccall(
-          'create_function',
-          'number',
-          ['number', 'string', 'number', 'number', 'number', 'number'],
-          [db, zFunctionName, nArg, eTextRep, key, 1]);
-      }
-
-    Module['getFunctionUserData'] = function(pContext) {
-      return mapContextToAppData.get(pContext);
+      mapFunctionNameToKey.set(zFunctionName, pAsyncFlags);
+      Module['setCallback'](pAsyncFlags, { xFunc, xStep, xFinal });
     }
+    return result;
+  };
 
-    _jsUpdateHook = function(pApp, updateType, dbName, tblName, lo32, hi32) {
-      const f = mapIdToFunction.get(pApp);
-      const heap = HEAPU8;
-      const rowid = (BigInt(hi32) << 32n) | (BigInt(lo32) & 0xffffffffn);
-      f(updateType, pullCstr(heap, dbName), pullCstr(heap, tblName), rowid);
-    }
-
-    _jsFunc = function(pApp, pContext, iCount, ppValues) {
-      const f = mapIdToFunction.get(pApp);
-      mapContextToAppData.set(pContext, f.appData);
-      f.f(pContext, new Uint32Array(HEAPU8.buffer, ppValues, iCount));
-      mapContextToAppData.delete(pContext);
-    }
-
-    _jsStep = function(pApp, pContext, iCount, ppValues) {
-      const f = mapIdToFunction.get(pApp);
-      mapContextToAppData.set(pContext, f.appData);
-      f.step(pContext, new Uint32Array(HEAPU8.buffer, ppValues, iCount));
-      mapContextToAppData.delete(pContext);
-    }
-
-    _jsFinal = function(pApp, pContext) {
-      const f = mapIdToFunction.get(pApp);
-      mapContextToAppData.set(pContext, f.appData);
-      f.final(pContext);
-      mapContextToAppData.delete(pContext);
-    }
+  /**
+   * Adapts the update hook callback to serve as a bridge between the C-side callback and the JS callback:
+   * - str pointer -> string 
+   * - legalized i64 (lo32, hi32) -> bigint
+   *
+   * @param {(updateType: 9 | 18 | 23, dbName: string, tblName: string, rowid: bigint) => void} f
+   * @returns {(updateType: number, dbName: number, tblName: number, lo32: number, hi32: number) => void}
+   */
+  const adaptHookCb = (f) => (ut, dbn, tbn, lo32, hi32) => {
+    const rowid = delegalize(lo32, hi32);
+    const dbName = Module.UTF8ToString(dbn)
+    const tblName = Module.UTF8ToString(tbn)
+    f(ut, dbName, tblName, rowid)
   }
-};
 
-const FN_METHOD_NAMES = [
-  "jsFunc",
-  "jsStep",
-  "jsFinal",
-  "jsUpdateHook"
-];
-for (const method of FN_METHOD_NAMES) {
-  fn_methods[method] = function() {};
-  fn_methods[`${method}__deps`] = ['$fn_method_support'];
+  Module['updateHook'] = function(db, f) {
+    const key = Math.floor(Math.random() * 10000)
+    Module["setCallback"](key, adaptHookCb(f))
+
+    return ccall(
+      'libfunction_update_hook',
+      'void',
+      ['number', 'number'],
+      [db, key]
+    );
+  }
+})();
+
+// Emscripten "legalizes" 64-bit integer arguments by passing them as
+// two 32-bit signed integers.
+function delegalize(lo32, hi32) {
+  return (BigInt(hi32) << 32n) | (BigInt(lo32) & 0xffffffffn);
 }
-mergeInto(LibraryManager.library, fn_methods);

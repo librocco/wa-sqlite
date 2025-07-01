@@ -1,5 +1,7 @@
 .DS_Store
 
+node_modules/
+
 # https://yarnpkg.com/getting-started/qa/#which-files-should-be-gitignored
 .yarn/*
 !.yarn/patches
@@ -10,15 +12,9 @@
 .pnp.*
 *.o
 
+.turbo/
 /cache
 /debug
 /deps
 /tmp
-
-.DS_Store
-
-node_modules/
-.turbo/
-/dist-xl.zip
-/dist-xl
 /dist
