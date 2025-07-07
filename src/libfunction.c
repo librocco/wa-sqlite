@@ -7,7 +7,7 @@
 
 #include "libadapters.h"
 
-enum { xFunc, xStep, xFinal, xUpdateHook };
+enum { xFunc, xStep, xFinal };
 
 #define FUNC_JS(SIGNATURE, KEY, METHOD, ...)                                   \
   (asyncFlags & (1 << METHOD) ? SIGNATURE##_async(KEY, #METHOD, __VA_ARGS__)   \

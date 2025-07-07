@@ -112,13 +112,15 @@ EMFLAGS_JSPI = \
 	-s ASYNCIFY_IMPORTS=@src/asyncify_imports.json \
 	-s ASYNCIFY_EXPORTS=@src/asyncify_exports.json
 
+# NOTE: The tests expect the default page size to be 8192 (not 4096 like the sqlite3 default)
 WASQLITE_EXTRA_DEFINES = \
 	-DSQLITE_EXTRA_INIT=core_init \
 	-DSQLITE_ENABLE_FTS5 \
 	-DSQLITE_OMIT_UTF16 \
 	-DSQLITE_ENABLE_BYTECODE_VTAB \
 	-DDEFAULT_CACHE_SIZE=8000 \
-	-DCRSQLITE_WASM
+	-DCRSQLITE_WASM \
+	-DSQLITE_DEFAULT_PAGE_SIZE=8192
 
 # https://www.sqlite.org/compile.html
 WASQLITE_DEFINES = \

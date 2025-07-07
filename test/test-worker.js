@@ -4,9 +4,9 @@ import * as Comlink from 'comlink';
 import * as SQLite from '../src/sqlite-api.js';
 
 const BUILDS = new Map([
-  ['default', '../dist/wa-sqlite.mjs'],
-  ['asyncify', '../dist/wa-sqlite-async.mjs'],
-  ['jspi', '../dist/wa-sqlite-jspi.mjs'],
+  ['default', '../dist/crsqlite-sync.mjs'],
+  ['asyncify', '../dist/crsqlite.mjs'],
+  ['jspi', '../dist/crsqlite-jspi.mjs'],
 ]);
 
 const MODULE = Symbol('module');
@@ -132,8 +132,8 @@ maybeReset().then(async () => {
 async function maybeReset() {
   if (searchParams.get('reset') !== 'true') {
     return;
-  }  
-  
+  }
+
   // Limit the amount of time in this function.
   const abortController = new AbortController();
   setTimeout(() => abortController.abort(), 10_000);
@@ -166,7 +166,7 @@ async function maybeReset() {
   const dbList = indexedDB.databases ?
     await indexedDB.databases() :
     INDEXEDDB_DBNAMES.map(name => ({ name }));
-  await Promise.all(dbList.map(({name}) => {
+  await Promise.all(dbList.map(({ name }) => {
     return new Promise((resolve, reject) => {
       const request = indexedDB.deleteDatabase(name);
       request.onsuccess = resolve;
@@ -181,7 +181,7 @@ function cvtErrorToCloneable(e) {
       ...['name', 'message', 'stack'].filter(k => e[k] !== undefined),
       ...Object.getOwnPropertyNames(e)
     ]);
-    return Object.fromEntries(Array.from(props, k =>  [k, e[k]])
+    return Object.fromEntries(Array.from(props, k => [k, e[k]])
       .filter(([_, v]) => {
         // Skip any non-cloneable properties.
         try {

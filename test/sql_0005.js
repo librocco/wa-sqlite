@@ -7,18 +7,18 @@ export function sql_0005(context) {
       const proxy = await context.create();
       await context.destroy(proxy);
     });
-  
+
     const cleanup = [];
     beforeEach(async function() {
       cleanup.splice(0);
     });
-  
+
     afterEach(async function() {
       for (const fn of cleanup) {
         await fn();
       }
     });
-  
+
     it('should transact atomically', async function() {
       const instances = [];
       for (let i = 0; i < 8; ++i) {
@@ -27,6 +27,7 @@ export function sql_0005(context) {
         const db = await sqlite3.open_v2('demo');
         instances.push({ sqlite3, db });
         cleanup.push(async () => {
+          await sqlite3.exec(db, "select crsql_finalize()");
           await sqlite3.close(db);
           await context.destroy(proxy);
         });

@@ -10,6 +10,7 @@ export function api_misc(context) {
     });
 
     afterEach(async function() {
+      await sqlite3.exec(db, "select crsql_finalize()");
       await sqlite3.close(db);
       await context.destroy(proxy);
     });
@@ -37,6 +38,7 @@ export function api_misc(context) {
     });
 
     afterEach(async function() {
+      await sqlite3.exec(db, "select crsql_finalize()");
       await sqlite3.close(db);
       await context.destroy(proxy);
     });

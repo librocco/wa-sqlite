@@ -10,6 +10,7 @@ export function sql_0002(context) {
     });
 
     afterEach(async function() {
+      await sqlite3.exec(db, "select crsql_finalize()");
       await sqlite3.close(db);
       await context.destroy(proxy);
     });

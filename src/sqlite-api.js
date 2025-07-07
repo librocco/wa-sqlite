@@ -242,7 +242,17 @@ export function Factory(Module) {
       verifyDatabase(db);
       const result = await f(db);
       databases.delete(db);
-      return check(fname, result, db);
+      try {
+        return check(fname, result, db);
+
+      } catch (e) {
+        console.log("error: rc:", result)
+        console.log("existing stmts:")
+        for (const stmt of mapStmtToDB.keys()) {
+          console.log("  stmt:", stmt, "db:", mapStmtToDB.get(stmt));
+        }
+        throw e
+      }
     };
   })();
 
@@ -701,7 +711,7 @@ export function Factory(Module) {
         let stmt;
         function maybeFinalize() {
           if (stmt && !options.unscoped) {
-            sqlite3.finalize(stmt);
+            sqlite3.finalize(stmt).then(rc => (rc !== SQLite.SQLITE_OK) && console.log("stmt finalize rc:", rc))
           }
           stmt = 0;
         }
