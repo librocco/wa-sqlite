@@ -274,7 +274,7 @@ for (const [key, factory] of FACTORIES) {
     });
 
     afterEach(async function() {
-      await sqlite3.exec("SELECT cr")
+      await sqlite3.exec(db, "SELECT crsql_finalize()");
       await sqlite3.close(db);
     });
 
@@ -326,7 +326,10 @@ for (const [key, factory] of FACTORIES) {
     });
 
     afterEach(async function() {
-      await sqlite3.exec("SELECT cr")
+      // Reset the authorizer before teardown: authorizers within some tests below
+      // deny all requests (including "SELECT crsql_finalize()") 
+      await sqlite3.set_authorizer(db, () => SQLite.SQLITE_OK)
+      await sqlite3.exec(db, "SELECT crsql_finalize()");
       await sqlite3.close(db);
     });
 
