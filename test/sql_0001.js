@@ -10,6 +10,7 @@ export function sql_0001(context) {
     });
 
     afterEach(async function() {
+      await sqlite3.exec(db, "select crsql_finalize()");
       await sqlite3.close(db);
       await context.destroy(proxy);
     });
@@ -22,7 +23,7 @@ export function sql_0001(context) {
         SELECT COUNT(*) FROM foo;
       `, Comlink.proxy(row => count = row[0]));
       expect(count).toBe(3);
-  
+
       count = undefined;
       await sqlite3.exec(db, `
         BEGIN TRANSACTION;
@@ -31,7 +32,7 @@ export function sql_0001(context) {
         SELECT COUNT(*) FROM foo;
       `, Comlink.proxy(row => count = row[0]));
       expect(count).toBe(103);
-  
+
       count = undefined;
       await sqlite3.exec(db, `
         ROLLBACK;

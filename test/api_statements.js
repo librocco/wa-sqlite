@@ -10,6 +10,7 @@ export function api_statements(context) {
     });
 
     afterEach(async function() {
+      await sqlite3.exec(db, "select crsql_finalize()");
       await sqlite3.close(db);
       await context.destroy(proxy);
     });
@@ -280,7 +281,7 @@ export function api_statements(context) {
           expect(row[2]).toEqual(cInt);
           expect(row[3]).toEqual(cNull);
           expect(row[4]).toEqual(cText);
-        } 
+        }
       }
     });
 
@@ -323,7 +324,7 @@ export function api_statements(context) {
           expect(row[2]).toEqual(cInt);
           expect(row[3]).toEqual(cNull);
           expect(row[4]).toEqual(cText);
-        } 
+        }
       }
     });
 

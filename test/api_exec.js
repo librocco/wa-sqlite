@@ -11,6 +11,7 @@ export function api_exec(context) {
     });
 
     afterEach(async function() {
+      await sqlite3.exec(db, "select crsql_finalize()");
       await sqlite3.close(db);
       await context.destroy(proxy);
     });

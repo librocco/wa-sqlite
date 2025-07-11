@@ -385,21 +385,6 @@ export function Factory(Module) {
     return SQLite.SQLITE_OK;
   }
 
-  // sqlite3.create_function = function(db, zFunctionName, nArg, eTextRep, pApp, xFunc, xStep, xFinal) {
-  //   verifyDatabase(db);
-  //   if (xFunc && !xStep && !xFinal) {
-  //     const result = Module.createFunction(db, zFunctionName, nArg, eTextRep, pApp, xFunc);
-  //     return check('sqlite3_create_function', result, db);
-  //   }
-
-  //   if (!xFunc && xStep && xFinal) {
-  //     const result = Module.createAggregate(db, zFunctionName, nArg, eTextRep, pApp, xStep, xFinal);
-  //     return check('sqlite3_create_function', result, db);
-  //   }
-
-  //   throw new SQLiteError('invalid function combination', SQLite.SQLITE_MISUSE);
-  // };
-
   sqlite3.create_function = function(db, zFunctionName, nArg, eTextRep, pApp, xFunc, xStep, xFinal) {
     verifyDatabase(db);
 
@@ -756,10 +741,6 @@ export function Factory(Module) {
       return check(fname, rc, mapStmtToDB.get(stmt), [SQLite.SQLITE_ROW, SQLite.SQLITE_DONE]);
     };
   })();
-
-
-
-
 
   sqlite3.value = function(pValue) {
     const type = sqlite3.value_type(pValue);

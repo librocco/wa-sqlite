@@ -8,28 +8,11 @@
   const FUNC_METHODS = [
     'xFunc',
     'xStep',
-    'xFinal',
+    'xFinal'
   ];
 
   const mapFunctionNameToKey = new Map();
 
-  // NOTE: this is the vlcn implementation -- I couldn't find an old blame on hashimoto
-  // corresponding to this.
-  // The below code (uncommented) is the latest up-to-date code from the original hashimoto version
-  //
-  // Module['createFunction'] =
-  //   function(db, zFunctionName, nArg, eTextRep, pAppData, f) {
-  //     const key = mapIdToFunction.size;
-  //     mapIdToFunction.set(key, {
-  //       f: f,
-  //       appData: pAppData
-  //     });
-  //     return ccall(
-  //       'create_function',
-  //       'number',
-  //       ['number', 'string', 'number', 'number', 'number', 'number'],
-  //       [db, zFunctionName, nArg, eTextRep, key, 0]);
-  //   }
   Module['create_function'] = function(db, zFunctionName, nArg, eTextRep, pApp, xFunc, xStep, xFinal) {
     // Allocate some memory to store the async flags. In addition, this
     // pointer is passed to SQLite as the application data (the user's
@@ -38,8 +21,6 @@
     const pAsyncFlags = Module['_sqlite3_malloc'](4);
     const target = { xFunc, xStep, xFinal };
 
-    // TODO: Check this this - seems to be prone to conflicts if two functions share the same 
-    // set of async flags
     setValue(pAsyncFlags, FUNC_METHODS.reduce((mask, method, i) => {
       if (target[method] instanceof AsyncFunction) {
         return mask | 1 << i;

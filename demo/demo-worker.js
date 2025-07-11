@@ -3,12 +3,9 @@
 import * as SQLite from '../src/sqlite-api.js';
 
 const BUILDS = new Map([
-  ['default', '../dist/wa-sqlite.mjs'],
-  ['asyncify', '../dist/wa-sqlite-async.mjs'],
-  ['jspi', '../dist/wa-sqlite-jspi.mjs'],
-  // ['default', '../debug/wa-sqlite.mjs'],
-  // ['asyncify', '../debug/wa-sqlite-async.mjs'],
-  // ['jspi', '../debug/wa-sqlite-jspi.mjs'],
+  ['default', '../dist/crsqlite-sync.mjs'],
+  ['asyncify', '../dist/crsqlite.mjs'],
+  ['jspi', '../dist/crsqlite-jspi.mjs'],
 ]);
 
 /**

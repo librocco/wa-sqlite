@@ -1,10 +1,6 @@
 // Copyright 2024 Roy T. Hashimoto. All Rights Reserved.
 import { FacadeVFS } from "../FacadeVFS.js";
 import * as VFS from "../VFS.js";
-
-// TODO: remove this if unnecessary
-// import { WebLocksExclusive as WebLocks } from './WebLocks.js';
-// import { WebLocksShared as WebLocks } from './WebLocks.js';
 import { WebLocksMixin } from "../WebLocksMixin.js";
 
 /**
